@@ -164,12 +164,16 @@ def print_timetable(courses):
 def get_valid_student(student_id_input):
     with open("students.txt", "r") as f:
         for line in f:
-            student_id, faculty, student_name = map(str.strip, line.split(','))
-            if student_id_input == student_id:
-                return student_id, student_name
+            parts = line.strip().split(',')
+            if len(parts) >= 3:
+                student_id = parts[0].strip()
+                faculty = parts[1].strip()
+                student_name = ','.join(parts[2:]).strip()
+                if student_id_input == student_id:
+                    return student_id, student_name
             
     st.error("Invalid student ID. Cannot continue with course enrollment.")
-    return None
+    return None, None
 
 def get_valid_course(student_timetable, course_name_input):
     """
@@ -323,13 +327,59 @@ def option3():
                 st.success(f"{student_name} has successfully dropped {course_to_drop}.")
         else:
             st.error("Invalid student ID.")
-
-
+def option4():
+    st.subheader("Add New Student")
+    
+    student_id_input = st.text_input("Enter a new student ID (6 digits):")
+    if student_id_input:
+        if len(student_id_input) != 6 or not student_id_input.isdigit():
+            st.error("Invalid student ID. Please enter a 6-digit number.")
+        else:
+            existing_ids = set()
+            with open("students.txt", "r") as f:
+                for line in f:
+                    student_id = line.strip().split(",")[0]
+                    existing_ids.add(student_id)
+            
+            if student_id_input in existing_ids:
+                st.error("Student ID already exists. Please enter a unique ID.")
+            else:
+                faculty_options = ["BUS", "EDU", "ART", "SCI", "ENG"]
+                faculty_input = st.selectbox("Select the faculty:", faculty_options)
+                
+                full_name_input = st.text_input("Enter the full name:")
+                
+                if st.button("Add Student"):
+                    with open("students.txt", "a") as f:
+                        f.write(f"\n{student_id_input},{faculty_input},{full_name_input}")
+                    st.success("Student added successfully.")
+def option5():
+    st.subheader("Drop Out")
+    
+    student_id_input = st.text_input("Enter the student ID (CCID) to drop out:")
+    if student_id_input:
+        found = False
+        updated_lines = []
+        with open("students.txt", "r") as f:
+            for line in f:
+                student_id = line.strip().split(",")[0]
+                if student_id == student_id_input:
+                    found = True
+                else:
+                    updated_lines.append(line)
+        
+        if found:
+            with open("students.txt", "w") as f:
+                f.writelines(updated_lines)
+            st.success(f"Student with CCID {student_id_input} has been dropped out.")
+        else:
+            st.warning(f"Student with CCID {student_id_input} not found.")
+            
 def main():
     st.title("Mini-BearTracks")
     st.header("Welcome to Mini-BearTracks")
 
-    action = st.sidebar.selectbox("Choose an action", ["Print Timetable", "Enroll in Course", "Drop Course", "Quit"])
+    action = st.sidebar.selectbox("Choose an action", ["Print Timetable", "Enroll in Course", "Drop Course", "Add New Student", "Drop Out", "Quit"])
 
     if action == "Print Timetable":
         option1()
@@ -337,9 +387,13 @@ def main():
         option2()
     elif action == "Drop Course":
         option3()
+    elif action == "Add New Student":
+        option4()
+    elif action == "Drop Out":
+        option5()
     elif action == "Quit":
-        st.write("Goodbye")  # Print "Goodbye" message
-        sys.exit() 
+        st.write("Goodbye")
+        sys.exit()
 
 if __name__ == "__main__":
     main()
