@@ -330,29 +330,33 @@ def option3():
 def option4():
     st.subheader("Add New Student")
     
-    student_id_input = st.text_input("Enter a new student ID (6 digits):")
-    if student_id_input:
-        if len(student_id_input) != 6 or not student_id_input.isdigit():
-            st.error("Invalid student ID. Please enter a 6-digit number.")
-        else:
-            existing_ids = set()
-            with open("students.txt", "r") as f:
-                for line in f:
-                    student_id = line.strip().split(",")[0]
-                    existing_ids.add(student_id)
-            
-            if student_id_input in existing_ids:
-                st.error("Student ID already exists. Please enter a unique ID.")
+    admin_password = st.text_input("Enter the admin password:", type="password")
+    if admin_password == "password123":
+        student_id_input = st.text_input("Enter a new student ID (6 digits):")
+        if student_id_input:
+            if len(student_id_input) != 6 or not student_id_input.isdigit():
+                st.error("Invalid student ID. Please enter a 6-digit number.")
             else:
-                faculty_options = ["BUS", "EDU", "ART", "SCI", "ENG"]
-                faculty_input = st.selectbox("Select the faculty:", faculty_options)
+                existing_ids = set()
+                with open("students.txt", "r") as f:
+                    for line in f:
+                        student_id = line.strip().split(",")[0]
+                        existing_ids.add(student_id)
                 
-                full_name_input = st.text_input("Enter the full name:")
-                
-                if st.button("Add Student"):
-                    with open("students.txt", "a") as f:
-                        f.write(f"\n{student_id_input},{faculty_input},{full_name_input}")
-                    st.success("Student added successfully.")
+                if student_id_input in existing_ids:
+                    st.error("Student ID already exists. Please enter a unique ID.")
+                else:
+                    faculty_options = ["BUS", "EDU", "ART", "SCI", "ENG"]
+                    faculty_input = st.selectbox("Select the faculty:", faculty_options)
+                    
+                    full_name_input = st.text_input("Enter the full name:")
+                    
+                    if st.button("Add Student"):
+                        with open("students.txt", "a") as f:
+                            f.write(f"\n{student_id_input},{faculty_input},{full_name_input}")
+                        st.success("Student added successfully.")
+    else:
+        st.error("Incorrect admin password. Access denied.")
 def option5():
     st.subheader("Drop Out")
     
