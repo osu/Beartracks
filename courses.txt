@@ -1,0 +1,14 @@
+CMPUT 101; TR 14:00; 156; Marianne Morris
+CMPUT 272; TR 12:30; 158; Carrie Demmans Epp
+CMPUT 175; MWF 9:00; 115; Megan Flanders
+CMPUT 274; TR 8:00; 175; Paul Lu
+MATH 100; MWF 11:00; 157; EK Leonard
+MATH 101; MWF 12:00; 72; Dragos Hrimiuc
+MATH 125; MWF 14:00; 160; Valerie Budd
+MATH 201; MWF 13:00; 130; Faruk Uygul
+MATH 209; TR 9:30; 140; Eugene Bilokopytov
+STAT 151; MWF 8:00; 230; Mathieu Roland Dolar Chalifour
+STAT 252; MWF 10:00; 145; Gregory Miles Wagner
+ENGL 102; TR 15:30; 40; Staff
+ENGL 125; MWF 15:00; 20; Staff
+CMPUT 174; TR 8:00; 115; Sadaf Ahmed
