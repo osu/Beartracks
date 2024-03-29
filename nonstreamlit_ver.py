@@ -1,5 +1,4 @@
 #----------------------------------------------------
-# Assignment 1: Mini BearTracks
 # Purpose of program: Manage student timetables by enrolling in or dropping courses, and displaying the current timetable.
 #
 # Author: Hasan Khan
