@@ -9,6 +9,7 @@ from io import StringIO
 import sys
 import streamlit as st
 import pandas as pd
+import random
 
 def welcome_to_beartracks():
     """
@@ -91,7 +92,7 @@ def generate_timetable(student_id):
 
 def print_timetable(courses):
     """
-    Print the timetable in a structured format.
+    Print the timetable in a structured format using Streamlit.
     
     Inputs: courses (dict): Dictionary of the courses.
     
@@ -101,64 +102,46 @@ def print_timetable(courses):
     day_codes = ['MWF', 'TR', 'MWF', 'TR', 'MWF']
     times = ['8:00', '8:30', '9:00', '9:30', '10:00', '10:30', '11:00', '11:30', 
              '12:00', '12:30', '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30']
-    
-    timetable_str = StringIO()
-    old_stdout = sys.stdout
-    sys.stdout = timetable_str
 
-    # Prints header
-    print(" " * 6, end='')
+    # Define colors for each course
+    course_colors = {}
+    for day_code in day_codes:
+        for time in times:
+            if courses.get(day_code, {}).get(time):
+                course = format_course(courses[day_code][time]['course'])
+                if course not in course_colors:
+                    # Store the color with the formatted course name as the key
+                    course_colors[course] = f"background-color: #{random.randint(0, 0xFFFFFF):06x};"
+
+    span_map = {'MWF': 2, 'TR': 3}
+    # Create the timetable using Streamlit
+    timetable_html = '<table style="width: 100%; border-collapse: collapse;">'
+    timetable_html += '<tr><th></th>'
     for day in headers:
-        print(" "+f"{day.center(12)}", end='')
-    print("\n" + " " * 5 + "+" + "+".join(["-" * 12 for _ in headers]) + "+")
+        timetable_html += f'<th style="text-align: center;">{day}</th>'
+    timetable_html += '</tr>'
 
-    # Printing for each time
-    for time in times:
-        # Print course names for this time
-        print(time.ljust(5) + "|", end='')  
-        for i, day in enumerate(day_codes):
-            if courses.get(day, {}).get(time):
-                course = format_course(courses[day][time]['course'])
-                print(f"{course.center(12)}|", end='')
+    for time_index, time in enumerate(times):
+        # Only create a time label if there is a course starting at this time
+        timetable_html += f'<tr><td style="text-align: right;">{time}</td>'
+        for day_index, day in enumerate(headers):
+            day_code = day_codes[day_index]
+            if courses.get(day_code, {}).get(time):
+                course = format_course(courses[day_code][time]['course'])
+                room = str(courses[day_code][time]['room'])
+                color = course_colors[course]
+                rowspan = span_map.get(day_code, 1)
+                timetable_html += f'<td rowspan="{rowspan}" style="{color} border: 1px solid black; text-align: center; vertical-align: top;">{course}<br>{room}</td>'
             else:
-                print(" " * 12 + "|", end='')
-        print()
+                # Skip cells that are covered by a rowspan from a previous row
+                if any(courses.get(day_code, {}).get(times[prev_time_index]) for prev_time_index in range(max(0, time_index - rowspan + 1), time_index)):
+                    continue
+                else:
+                    timetable_html += '<td style="border: 1px solid black;"></td>'
+        timetable_html += '</tr>'
+    timetable_html += '</table>'
 
-        # Print open seat counts for this time
-        print(" " * 5 + "|", end='') 
-        for i, day in enumerate(day_codes):
-            if courses.get(day, {}).get(time):
-                room = str(courses[day][time]['room'])
-                print(f"{room.center(12)}|", end='')
-            else:
-                print(" " * 12 + "|", end='')
-        text = "\n" + " " * 5
-        if times.index(time) % 6 == 5:
-            text += "+"
-        else:
-            text += "|"
-        for _ in headers:
-            if _ == "Mon" or _ == "Wed" or _ == "Fri":
-                if times.index(time) % 2 == 1:
-                    text += "-" * 12
-                else:
-                    text += " " * 12
-            else:
-                if times.index(time) % 3 == 2:
-                    text += "-" * 12
-                else:
-                    text += " " * 12
-            if times.index(time) % 6 == 5:
-                text += "+"
-            else:
-                text += "|"
-                    
-        print(text)
-    sys.stdout = old_stdout
-    timetable_formatted = timetable_str.getvalue()
-    st.code(timetable_formatted, language='text')        
-        
-            
+    st.write(timetable_html, unsafe_allow_html=True)
             
 
 def get_valid_student(student_id_input):
@@ -282,9 +265,12 @@ def option2():
                     else:
                         if st.button("Enroll"):
                             enroll_student_in_course(student_id, student_name, course_name, course_details)
-                            st.success(f"{student_name} has successfully been enrolled in {course_name}.")
+                            day_time = course_details["timeslot"].split()
+                            day = 'MWF' if 'MWF' in day_time[0] else 'TR'
+                            time = day_time[1]
+                            st.success(f"{student_name} has successfully been enrolled in {course_name}, on {day} {time}")
                 else:
-                    st.error("Invalid course name.")
+                    st.error("Invalid course name or already enrolled.")
         else:
             st.error("Invalid student ID. Cannot continue with course enrollment.")
             
@@ -346,7 +332,7 @@ def option4():
                 if student_id_input in existing_ids:
                     st.error("Student ID already exists. Please enter a unique ID.")
                 else:
-                    faculty_options = ["BUS", "EDU", "ART", "SCI", "ENG"]
+                    faculty_options = ["BUS", "EDU", "ART", "SCI", "ENG", "NUR", "LAW", "KIN", ]
                     faculty_input = st.selectbox("Select the faculty:", faculty_options)
                     
                     full_name_input = st.text_input("Enter the full name:")
@@ -378,12 +364,74 @@ def option5():
             st.success(f"Student with CCID {student_id_input} has been dropped out.")
         else:
             st.warning(f"Student with CCID {student_id_input} not found.")
+
+def option6():
+    st.subheader("New Course Offering")
+    
+    admin_password = st.text_input("Enter the admin password:", type="password")
+    if admin_password == "password123":
+        course_name_input = st.text_input("Enter the course name (e.g., CMPUT 101):")
+        if course_name_input:
+            course_name_parts = course_name_input.split()
+            if len(course_name_parts) != 2:
+                st.error("Invalid course name format. Please enter the course name as 'SUBJECT COURSENUMBER' (e.g., CMPUT 101).")
+            else:
+                day_options = ["MWF", "TR"]
+                day_input = st.selectbox("Select the days:", day_options)
+                
+                times = ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00']
+                selected_time = st.selectbox("Select the time:", times)
+                
+                instructor_name_input = st.text_input("Enter the instructor name:")
+                
+                max_students_input = st.text_input("Enter the maximum number of students:")
+                
+                if st.button("Add Course"):
+                    if not instructor_name_input or not max_students_input:
+                        st.error("Please fill in all the required fields.")
+                    else:
+                        try:
+                            max_students = int(max_students_input)
+                            with open("courses.txt", "a") as f:
+                                f.write(f"\n{course_name_input}; {day_input} {selected_time}; {max_students}; {instructor_name_input}")
+                            st.success("Course added successfully.")
+                        except ValueError:
+                            st.error("Invalid maximum number of students. Please enter a valid integer.")
+    else:
+        st.error("Incorrect admin password. Access denied.")
+
+def option7():
+    st.subheader("Remove Course")
+    
+    admin_password = st.text_input("Enter the admin password:", type="password")
+    if admin_password == "password123":
+        course_name_input = st.text_input("Enter the course name to remove (e.g., CMPUT 101):")
+        if course_name_input:
+            course_name_input = course_name_input.upper()
+            course_found = False
+            updated_lines = []
+            with open("courses.txt", "r") as f:
+                for line in f:
+                    course_name = line.strip().split(";")[0]
+                    if course_name == course_name_input:
+                        course_found = True
+                    else:
+                        updated_lines.append(line)
             
+            if course_found:
+                with open("courses.txt", "w") as f:
+                    f.writelines(updated_lines)
+                st.success(f"Course {course_name_input} has been removed.")
+            else:
+                st.warning(f"Course {course_name_input} not found.")
+    else:
+        st.error("Incorrect admin password. Access denied.")
+
 def main():
     st.title("Mini-BearTracks")
     st.header("Welcome to Mini-BearTracks")
 
-    action = st.sidebar.selectbox("Choose an action", ["Print Timetable", "Enroll in Course", "Drop Course", "Add New Student", "Drop Out", "Quit"])
+    action = st.sidebar.selectbox("Choose an action", ["Print Timetable", "Enroll in Course", "Drop Course", "Add New Student", "Drop Out", "New Course Offering", "Remove Course", "Quit"])
 
     if action == "Print Timetable":
         option1()
@@ -395,6 +443,10 @@ def main():
         option4()
     elif action == "Drop Out":
         option5()
+    elif action == "New Course Offering":
+        option6()
+    elif action == "Remove Course":
+        option7()
     elif action == "Quit":
         st.write("Goodbye")
         sys.exit()
